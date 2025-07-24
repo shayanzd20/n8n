@@ -82,3 +82,38 @@ This is the simplest way for temporary testing. You can set the `WEBHOOK_URL` en
 export WEBHOOK_URL=https://your-ngrok-url.ngrok.io/
 npx n8n
 ```
+## Running n8n in GitHub Codespaces (502 Bad Gateway Solution)
+
+If you see a **502 Bad Gateway** error when accessing n8n in a GitHub Codespace, it's likely because the service isn't bound to the correct network interface.
+
+### What's Happening?
+
+- ✅ **n8n is running locally:**  
+    The terminal shows:  
+    `Editor is now accessible via: http://localhost:5678`
+- ❌ **But the forwarded Codespaces URL (e.g., `https://your-codespace-5678.app.github.dev`) returns a 502 error.**
+
+### Why?
+
+GitHub Codespaces requires your app to listen on all interfaces (`0.0.0.0`), not just `localhost` or `127.0.0.1`.
+
+### Solution
+
+**Set the host to `0.0.0.0`:**
+
+- In your `.env` file or environment variables:
+    ```
+    N8N_HOST=0.0.0.0
+    ```
+- Or start n8n with:
+    ```
+    n8n start --tunnel --host=0.0.0.0
+    ```
+
+This ensures n8n is accessible via the Codespaces public URL.
+
+or use this command to start n8n with the correct host binding:
+
+```bash
+npm run dev:codespace
+```
