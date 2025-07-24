@@ -1,0 +1,164 @@
+{
+	"nodes": [{
+			"parameters": {
+				"updates": {}
+			},
+			"id": "TelegramTrigger",
+			"name": "Telegram Trigger",
+			"type": "n8n-nodes-base.telegramTrigger",
+			"typeVersion": 1,
+			"position": [200, 300],
+			"webhookId": "telegram_webhook",
+			"credentials": {
+				"telegramApi": {
+					"id": "YOUR_TELEGRAM_API_CREDENTIAL_ID",
+					"name": "Telegram API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"functionCode": "const text = $json.message.text;\n\nconst regex = /(https?:\\/\\/www\\.instagram\\.com\\/p\\/[^\\s/]+\\/)/i;\nconst match = text.match(regex);\n\nif (match) {\n  return [{ json: { url: match[1], chat_id: $json.message.chat.id } }];\n} else {\n  return [{ json: { error: true, chat_id: $json.message.chat.id } }];\n}"
+			},
+			"id": "ParseInstagramURL",
+			"name": "Parse Instagram URL",
+			"type": "n8n-nodes-base.function",
+			"typeVersion": 1,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"chatId": "={{$json.chat_id}}",
+				"text": "Invalid Instagram link. Please send a public post URL.",
+				"additionalFields": {}
+			},
+			"id": "SendErrorMessage",
+			"name": "Send Error Message",
+			"type": "n8n-nodes-base.telegram",
+			"typeVersion": 1,
+			"position": [600, 200],
+			"credentials": {
+				"telegramApi": {
+					"id": "YOUR_TELEGRAM_API_CREDENTIAL_ID",
+					"name": "Telegram API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"url": "={{$json.url}}?__a=1&__d=dis",
+				"responseFormat": "json",
+				"jsonParameters": true
+			},
+			"id": "FetchInstagramPost",
+			"name": "Fetch Instagram Post",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 1,
+			"position": [600, 400]
+		},
+		{
+			"parameters": {
+				"functionCode": "// Instagram's JSON is complicated and can change. For basic public posts:\nconst graphql = $json.items?.[0] || $json.graphql?.shortcode_media;\nif (!graphql) throw new Error(\"Invalid response from Instagram\");\n\nreturn [{\n  json: {\n    chat_id: $node[\"ParseInstagramURL\"].json.chat_id,\n    caption: graphql.edge_media_to_caption?.edges?.[0]?.node?.text || graphql.caption?.text || '',\n    media_url: graphql.display_url || graphql.video_url || graphql.thumbnail_src\n  }\n}];"
+			},
+			"id": "ParseResponse",
+			"name": "Parse Response",
+			"type": "n8n-nodes-base.function",
+			"typeVersion": 1,
+			"position": [800, 400]
+		},
+		{
+			"parameters": {
+				"chatId": "={{$json.chat_id}}",
+				"text": "={{$json.caption}}",
+				"additionalFields": {}
+			},
+			"id": "SendCaption",
+			"name": "Send Caption",
+			"type": "n8n-nodes-base.telegram",
+			"typeVersion": 1,
+			"position": [1000, 300],
+			"credentials": {
+				"telegramApi": {
+					"id": "YOUR_TELEGRAM_API_CREDENTIAL_ID",
+					"name": "Telegram API"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"chatId": "={{$json.chat_id}}",
+				"image": "={{$json.media_url}}"
+			},
+			"id": "SendMedia",
+			"name": "Send Media",
+			"type": "n8n-nodes-base.telegram",
+			"typeVersion": 1,
+			"position": [1000, 500],
+			"credentials": {
+				"telegramApi": {
+					"id": "YOUR_TELEGRAM_API_CREDENTIAL_ID",
+					"name": "Telegram API"
+				}
+			}
+		}
+	],
+	"connections": {
+		"Telegram Trigger": {
+			"main": [
+				[{
+					"node": "ParseInstagramURL",
+					"type": "main",
+					"index": 0
+				}]
+			]
+		},
+		"ParseInstagramURL": {
+			"main": [
+				[{
+						"node": "SendErrorMessage",
+						"type": "main",
+						"index": 0,
+						"conditions": {
+							"true": {
+								"rules": [{
+									"value1": "={{$json.error}}",
+									"operation": "equal",
+									"value2": true
+								}]
+							}
+						}
+					},
+					{
+						"node": "FetchInstagramPost",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"FetchInstagramPost": {
+			"main": [
+				[{
+					"node": "ParseResponse",
+					"type": "main",
+					"index": 0
+				}]
+			]
+		},
+		"ParseResponse": {
+			"main": [
+				[{
+						"node": "SendCaption",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "SendMedia",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
+}

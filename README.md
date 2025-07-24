@@ -70,3 +70,15 @@ Want to shape the future of automation? Check out our [job posts](https://n8n.io
 **Short answer:** It means "nodemation" and is pronounced as n-eight-n.
 
 **Long answer:** "I get that question quite often (more often than I expected) so I decided it is probably best to answer it here. While looking for a good name for the project with a free domain I realized very quickly that all the good ones I could think of were already taken. So, in the end, I chose nodemation. 'node-' in the sense that it uses a Node-View and that it uses Node.js and '-mation' for 'automation' which is what the project is supposed to help with. However, I did not like how long the name was and I could not imagine writing something that long every time in the CLI. That is when I then ended up on 'n8n'." - **Jan Oberhauser, Founder and CEO, n8n.io**
+
+
+## Setting up Webhooks with ngrok
+
+### Directly in the Terminal (Most Common for npx n8n)
+
+This is the simplest way for temporary testing. You can set the `WEBHOOK_URL` environment variable before running the `npx n8n` command in the same terminal session:
+
+```bash
+export WEBHOOK_URL=https://your-ngrok-url.ngrok.io/
+npx n8n
+```
